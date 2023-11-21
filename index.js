@@ -2,26 +2,26 @@ const express = require('express');
 const cheerio = require('cheerio');
 const countryStateCity = require('country-state-city');
 const cors = require('cors');
+const { json } = require('body-parser');
 const axios = require('axios');
 const app = express();
 const port = 3000;
 
 app.use(express.json());
-app.use(cors());              
+app.use(cors());
+
+
 
 app.get('/extract-values', async (req, res) => {
-  // get search parameters
   try {
-    let url = `https://livingcost.org/cost/`;
+    let url = "https://livingcost.org/cost/";
     const { country, state, city } = req.query;
     if (country) {
       url += `${country}/`;
     }
     if (state && country) {
-      // get country code
       const countryCode = countryStateCity.Country.getAllCountries().find(c => country.toLowerCase() === c.name.toLowerCase()).isoCode;
 
-      // get state code
 
       const stateCode = countryStateCity.State.getStatesOfCountry(countryCode).find(s => state.toLowerCase() === s.name.toLowerCase())?.isoCode;
 
@@ -33,8 +33,8 @@ app.get('/extract-values', async (req, res) => {
     }
     console.log("***************************************", country)
     const response = await axios.get(url);
-    const html = await response.text();
-    // console.log(html)
+    const html = await response.data;
+    
 
 
     if (!html) {
@@ -46,10 +46,6 @@ app.get('/extract-values', async (req, res) => {
     async function extractValue(selector) {
       const valueString = $(selector).text().trim();
       let numericValue = parseFloat(valueString.replace(/[^\d.]/g, '')) * (valueString.includes('K')? 1000: 1);
-      // to inr from usd
-      const response = (await fetch(`https://v6.exchangerate-api.com/v6/${process.env.API_LINK}/latest/USD`));
-      // const curr = response 
-      // console.log(numericValue,response)
       return isNaN(numericValue) ? null : numericValue * 80; 
     } 
 
